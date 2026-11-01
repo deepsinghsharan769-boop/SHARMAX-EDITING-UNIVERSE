@@ -65,7 +65,42 @@ function showTab(id){document.querySelectorAll(".section").forEach(s=>s.classLis
 function addMedia(e){for(const f of e.target.files){const url=URL.createObjectURL(f);media.push({name:f.name,type:f.type,url});const d=document.createElement("div");d.className="mediaitem";d.textContent=f.name+" · "+(f.type.split("/")[0]||"file");$("mediaList").className="";$("mediaList").appendChild(d);if(f.type.startsWith("video/")){$("preview").innerHTML="";const v=document.createElement("video");v.src=url;v.controls=true;$("preview").appendChild(v);}}}
 function addClip(name){const type=name.toLowerCase().includes("audio")?"audio":name.toLowerCase().includes("title")?"text":"video";clips.push({name,type});renderClips();}
 function renderClips(){["video","audio","text"].forEach(t=>{$(t+"Lane").innerHTML="";clips.filter(c=>c.type===t).forEach((c,i)=>{const d=document.createElement("div");d.className="clip";d.style.left=(8+i*34)+"px";d.textContent=c.name;d.onclick=()=>{$("selectedClip").value=c.name;};$(t+"Lane").appendChild(d);});});}
-function sendChat(){const q=$("chatInput").value.trim();if(!q)return;const add=(who,t,cls="")=>{const d=document.createElement("div");d.className="msg "+cls;d.textContent=who+": "+t;$("chatlog").appendChild(d);};add("YOU",q,"user");let r="I can help organise this prototype. Try: add scene, add title, or add audio.";if(/title/i.test(q)){addClip("Title card");r="Added a title placeholder to TEXT 1.";}else if(/audio|voice/i.test(q)){addClip("Audio clip");r="Added an audio placeholder to AUDIO 1.";}else if(/scene|video|clip/i.test(q)){addClip("Video scene");r="Added a video placeholder to VIDEO 1.";}add("CHATMAX",r);$("chatInput").value="";$("chatlog").scrollTop=$("chatlog").scrollHeight;}
+async function sendChat(){
+  const q=$("chatInput").value.trim();
+  if(!q)return;
+
+  const add=(who,t,cls="")=>{
+    const d=document.createElement("div");
+    d.className="msg "+cls;
+    d.textContent=who+": "+t;
+    $("chatlog").appendChild(d);
+  };
+
+  add("YOU",q,"user");
+  $("chatInput").value="";
+  add("CHATMAX","Thinking…");
+  const pending=$("chatlog").lastElementChild;
+
+  try{
+    const response=await fetch("/api/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message:q})
+    });
+
+    const data=await response.json();
+
+    if(!response.ok){
+      throw new Error(data.error||"AI request failed");
+    }
+
+    pending.textContent="CHATMAX: "+data.reply;
+  }catch(error){
+    pending.textContent="CHATMAX ERROR: "+error.message;
+  }
+
+  $("chatlog").scrollTop=$("chatlog").scrollHeight;
+}
 function makePlan(){const t=$("directorBrief").value.trim();$("directorOutput").textContent=t?"PROPOSED PLAN: 1. Establish the central question. 2. Arrange the story in chronological beats. 3. Match each narration beat with a verified visual. 4. Add restrained titles and transitions. 5. Review pacing, factual accuracy and audio. This is a generic starter plan; no source research or edits have been performed.":"Enter a brief first.";}
 function addStoryScene(){const t=$("sceneText").value.trim(),v=$("sceneVisual").value.trim();if(!t)return;scenes.push({text:t,visual:v});const d=document.createElement("div");d.className="mediaitem";d.textContent="SCENE "+scenes.length+" — "+t+" | VISUAL: "+(v||"Not specified");$("sceneList").appendChild(d);$("sceneText").value="";$("sceneVisual").value="";}
 function newProject(){clips=[];scenes=[];$("projectName").value="Untitled Documentary";renderClips();$("sceneList").innerHTML="";$("selectedClip").value="None";}
