@@ -29,6 +29,16 @@ main{padding:24px;min-width:0}.hero{border:1px solid #39322d;border-radius:16px;
 .row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.row>*{flex:1;min-width:90px}.small{font-size:11px;color:var(--muted)}.field{margin:12px 0}.field input{padding:8px}.chatlog{height:300px;overflow:auto;background:#090b0e;border:1px solid var(--line);border-radius:9px;padding:12px;font-size:13px;line-height:1.5}.msg{padding:9px 11px;border-radius:8px;background:#1b2027;margin:8px 0}.msg.user{background:#30241b}.notice{padding:12px;border:1px solid #59412d;background:#1d1712;border-radius:9px;color:#d8b99f;font-size:12px;line-height:1.5}
 @media(max-width:900px){.editor{grid-template-columns:1fr}.grid{grid-template-columns:1fr 1fr}.layout{grid-template-columns:155px minmax(0,1fr)}}
 @media(max-width:600px){.top{height:auto;padding:12px;align-items:flex-start;gap:8px;flex-direction:column}.layout{display:block}.side{display:flex;overflow:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px}.side small{display:none}.nav{white-space:nowrap;width:auto;margin:0 4px}.grid{grid-template-columns:1fr}main{padding:14px}.actions button{padding:7px;font-size:11px}}
+/* SHARMAX Cinematic Documentary Look */
+#preview.cinematic video {
+  filter: contrast(1.18) saturate(0.82) brightness(0.88);
+  transform: scale(1.04);
+  transition: filter 0.5s ease, transform 0.5s ease;
+}
+
+#preview video {
+  transition: filter 0.5s ease, transform 0.5s ease;
+}
 </style></head>
 <body>
 <div id="login" class="login"><div class="loginbox">
@@ -49,7 +59,10 @@ main{padding:24px;min-width:0}.hero{border:1px solid #39322d;border-radius:16px;
 <p class="notice" style="margin-top:16px">Prototype status: this package includes a working interface and basic local project actions. It is not yet a full video editor: real timeline playback/editing, AI model connection and MP4 rendering still need engineering work.</p></section>
 <section id="editor" class="section"><div class="sectionhead"><h2>Studio Editor</h2><span class="small">16:9 • Browser prototype</span></div>
 <div class="editor"><div class="panel"><h3>Media Library</h3><input id="mediaInput" type="file" multiple accept="video/*,audio/*,image/*" onchange="addMedia(event)"><div id="mediaList" class="drop" style="margin-top:12px">Import video, audio or images</div></div>
-<div class="panel"><h3>Composition Monitor</h3><div class="preview" id="preview"><div>PREVIEW MONITOR<br><span class="small">Select a video file to preview</span></div></div><div class="row"><button onclick="alert('Playback controls will be connected with the editing engine in a later build.')">▶ Play</button><button onclick="addClip('Video scene')">＋ Add clip</button><button onclick="addClip('Title card')">＋ Add title</button></div><div class="timeline"><h3>Timeline</h3><div class="track"><b>VIDEO 1</b><div class="lane" id="videoLane"></div></div><div class="track"><b>AUDIO 1</b><div class="lane" id="audioLane"></div></div><div class="track"><b>TEXT 1</b><div class="lane" id="textLane"></div></div></div></div>
+<div class="panel"><h3>Composition Monitor</h3><div class="preview" id="preview"><div>PREVIEW MONITOR<br><span class="small">Select a video file to preview</span></div></div><<div class="row" style="margin:10px 0">
+  <button onclick="document.getElementById('preview').classList.add('cinematic')">🎬 Cinematic Look</button>
+  <button onclick="document.getElementById('preview').classList.remove('cinematic')">↩ Reset Look</button>
+</div>><button onclick="addClip('Video scene')">＋ Add clip</button><button onclick="addClip('Title card')">＋ Add title</button></div><div class="timeline"><h3>Timeline</h3><div class="track"><b>VIDEO 1</b><div class="lane" id="videoLane"></div></div><div class="track"><b>AUDIO 1</b><div class="lane" id="audioLane"></div></div><div class="track"><b>TEXT 1</b><div class="lane" id="textLane"></div></div></div></div>
 <div class="panel"><h3>Inspector</h3><div class="field"><label>Project name</label><input id="projectName" value="Untitled Documentary"></div><div class="field"><label>Selected clip</label><input id="selectedClip" value="None" readonly></div><div class="field"><label>Scale</label><input type="range" min="10" max="200" value="100"></div><div class="field"><label>Opacity</label><input type="range" min="0" max="100" value="100"></div><p class="small">Inspector controls are visual placeholders until the editing engine is added.</p></div></div></section>
 <section id="chat" class="section"><div class="sectionhead"><h2>CHATMAX AI</h2><span class="small">Gemini AI Connected</span></div><div class="notice">CHATMAX AI is connected to the Gemini API. Describe your editing task below.</div><div class="panel" style="margin-top:14px"><div id="chatlog" class="chatlog"><div class="msg">CHATMAX: Hello! Describe the editing task you want help with.</div></div><div class="row"><input id="chatInput" placeholder="Describe an edit..." onkeydown="if(event.key==='Enter')sendChat()"><button class="primary" onclick="sendChat()">Send</button></div></div></section>
 <section id="director" class="section"><div class="sectionhead"><h2>Autonomous Director</h2><span class="small">Planning mode</span></div><div class="panel"><h3>Director brief</h3><textarea id="directorBrief" rows="5" placeholder="Paste your documentary idea or script summary..."></textarea><div class="row"><button class="primary" onclick="makePlan()">Generate creative plan</button></div><div id="directorOutput" class="notice">The Director will create a proposed plan here. No changes are made automatically.</div></div></section>
