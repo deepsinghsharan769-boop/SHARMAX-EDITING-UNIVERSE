@@ -91,6 +91,33 @@ async function sendChat(){
 
   add("YOU",q,"user");
   $("chatInput").value="";
+
+  const command=q.toLowerCase();
+
+  if(
+    command.includes("cinematic") ||
+    command.includes("netflix") ||
+    command.includes("premium documentary") ||
+    command.includes("documentary look")
+  ){
+    const video=$("preview").querySelector("video");
+
+    if(!video){
+      add("CHATMAX","Please upload a video in the Composition Monitor first.");
+    }else{
+      $("preview").classList.add("cinematic");
+      add("CHATMAX","Cinematic documentary look applied to your preview!");
+    }
+
+    return;
+  }
+
+  if(command.includes("reset look") || command.includes("remove cinematic")){
+    $("preview").classList.remove("cinematic");
+    add("CHATMAX","Cinematic look reset.");
+    return;
+  }
+
   add("CHATMAX","Thinking…");
   const pending=$("chatlog").lastElementChild;
 
@@ -102,10 +129,7 @@ async function sendChat(){
     });
 
     const data=await response.json();
-
-    if(!response.ok){
-      throw new Error(data.error||"AI request failed");
-    }
+    if(!response.ok)throw new Error(data.error||"AI request failed");
 
     pending.textContent="CHATMAX: "+data.reply;
   }catch(error){
