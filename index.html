@@ -204,18 +204,59 @@ function selectAnimationDuration(seconds) {
   $("animationDurationStatus").textContent =
     "Selected duration: " + seconds + " seconds";
 }
-
 async function analyseReferenceVideo() {
   const file = $("referenceVideoInput").files[0];
+  const status = $("referenceAnalysisStatus");
 
   if (!file) {
-    $("referenceAnalysisStatus").textContent =
-      "Please upload a reference video first.";
+    status.textContent = "Please upload a reference video first.";
     return;
   }
 
-  $("referenceAnalysisStatus").textContent =
-    "Reference video ready. AI analysis engine is not connected yet.";
+  status.textContent = "Creating secure upload session...";
+
+  try {
+    const sessionResponse = await fetch("/api/start-reference-upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileName: file.name,
+        mimeType: file.type,
+        size: file.size
+      })
+    });
+
+    const sessionData = await sessionResponse.json();
+
+    if (!sessionResponse.ok) {
+      throw new Error(sessionData.error || "Upload session failed.");
+    }
+
+    status.textContent = "Uploading reference video...";
+
+    const uploadResponse = await fetch(sessionData.uploadUrl, {
+      method: "POST",
+      headers: {
+        "X-Goog-Upload-Offset": "0",
+        "X-Goog-Upload-Command": "upload, finalize",
+        "Content-Type": file.type
+      },
+      body: file
+    });
+
+    const uploadData = await uploadResponse.json();
+
+    if (!uploadResponse.ok) {
+      throw new Error("Video upload failed.");
+    }
+
+    status.textContent =
+      "Video uploaded successfully. File: " +
+      (uploadData.file?.name || "Uploaded");
+
+  } catch (error) {
+    status.textContent = "Upload error: " + error.message;
+  }
 }
 
 function setupPassword(){const p=prompt("Create a password for this device (minimum 8 characters):");if(!p)return;if(p.length<8){$("loginError").textContent="Use at least 8 characters.";return;}localStorage.setItem("sharmax_local_pass",p);$("loginError").textContent="Password saved on this device. Sign in now."; }
