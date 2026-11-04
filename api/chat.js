@@ -4,97 +4,59 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { message } = req.body || {};
-
-    if (!message || typeof message !== "string") {
-      return res.status(400).json({ error: "Message is required" });
-    }
-
-    if (message.length > 10000) {
-      return res.status(400).json({ error: "Message is too long" });
-    }
-
+    const { fileName, mimeType, size } = req.body || {};
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      return res.status(500).json({
-        error: "Gemini API key is not configured"
+      return res.status(500).json({ error: "Gemini API key missing" });
+    }
+
+    if (
+      !fileName ||
+      !mimeType ||
+      !mimeType.startsWith("video/") ||
+      !Number.isFinite(size) ||
+      size <= 0
+    ) {
+      return res.status(400).json({ error: "Invalid video details" });
+    }
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "X-Goog-Upload-Protocol": "resumable",
+          "X-Goog-Upload-Command": "start",
+          "X-Goog-Upload-Header-Content-Length": String(size),
+          "X-Goog-Upload-Header-Content-Type": mimeType,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          file: { display_name: fileName }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: "Could not start video upload"
       });
     }
 
-    const models = [
-      "gemini-3.8-flash",
-      "gemini-3.5-flash-lite"
-    ];
+    const uploadUrl = response.headers.get("x-goog-upload-url");
 
-    let lastError = "AI request failed";
-
-    for (const model of models) {
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "x-goog-api-key": apiKey
-              },
-              body: JSON.stringify({
-                contents: [
-                  {
-                    role: "user",
-                    parts: [{ text: message }]
-                  }
-                ]
-              })
-            }
-          );
-
-          const data = await response.json();
-
-          if (response.ok) {
-            const reply =
-              data.candidates?.[0]?.content?.parts
-                ?.map(part => part.text || "")
-                .join("") || "No response received.";
-
-            return res.status(200).json({
-              reply,
-              model
-            });
-          }
-
-          lastError = data.error?.message || "Gemini request failed";
-
-          if (
-            response.status !== 429 &&
-            response.status !== 500 &&
-            response.status !== 503
-          ) {
-            return res.status(response.status).json({
-              error: lastError
-            });
-          }
-
-        } catch (error) {
-          lastError = error.message;
-        }
-
-        await new Promise(resolve =>
-          setTimeout(resolve, 1000 * (attempt + 1))
-        );
-      }
+    if (!uploadUrl) {
+      return res.status(500).json({
+        error: "Upload session URL not received"
+      });
     }
 
-    return res.status(503).json({
-      error: "Both AI models are temporarily unavailable. Please try again later.",
-      details: lastError
-    });
+    return res.status(200).json({ uploadUrl });
 
   } catch (error) {
     return res.status(500).json({
-      error: "Server error"
+      error: "Upload setup failed"
     });
   }
 }
