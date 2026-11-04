@@ -213,33 +213,45 @@ async function analyseReferenceVideo() {
     return;
   }
 
-  if (file.size > 4 * 1024 * 1024) {
-    status.textContent = "Video must be smaller than 4 MB.";
+  const maxSize = 150 * 1024 * 1024;
+
+  if (file.size > maxSize) {
+    status.textContent = "Video must be 150 MB or smaller.";
     return;
   }
 
-  status.textContent = "Uploading video securely to Gemini...";
+  const allowedTypes = [
+    "video/mp4",
+    "video/webm",
+    "video/quicktime",
+    "video/x-matroska"
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
+    status.textContent = "Please select MP4, WebM, MOV or MKV video.";
+    return;
+  }
 
   try {
-    const response = await fetch("/api/upload-reference-video", {
-      method: "POST",
-      headers: {
-        "Content-Type": file.type
-      },
-      body: file
+    status.textContent = "Connecting to secure video upload...";
+
+    const { upload } = await import(
+      "https://esm.sh/@vercel/blob@2.4.0/client"
+    );
+
+    status.textContent = "Uploading reference video...";
+
+    const blob = await upload(file.name, file, {
+      access: "private",
+      handleUploadUrl: "/api/reference-video-upload",
+      multipart: true
     });
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || "Video upload failed.");
-    }
-
     status.textContent =
-      "Video uploaded successfully! File: " +
-      (result.file?.name || "Uploaded");
+      "Reference video uploaded successfully! File: " + blob.pathname;
 
   } catch (error) {
+    console.error("Reference upload error:", error);
     status.textContent = "Upload error: " + error.message;
   }
 }
