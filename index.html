@@ -66,7 +66,17 @@ main{padding:24px;min-width:0}.hero{border:1px solid #39322d;border-radius:16px;
 <div class="panel"><h3>Inspector</h3><div class="field"><label>Project name</label><input id="projectName" value="Untitled Documentary"></div><div class="field"><label>Selected clip</label><input id="selectedClip" value="None" readonly></div><div class="field"><label>Scale</label><input type="range" min="10" max="200" value="100"></div><div class="field"><label>Opacity</label><input type="range" min="0" max="100" value="100"></div><p class="small">Inspector controls are visual placeholders until the editing engine is added.</p></div></div></section>
 <section id="chat" class="section"><div class="sectionhead"><h2>CHATMAX AI</h2><span class="small">Gemini AI Connected</span></div><div class="notice">CHATMAX AI is connected to the Gemini API. Describe your editing task below.</div><div class="panel" style="margin-top:14px"><div id="chatlog" class="chatlog"><div class="msg">CHATMAX: Hello! Describe the editing task you want help with.</div></div><div class="row"><input id="chatInput" placeholder="Describe an edit..." onkeydown="if(event.key==='Enter')sendChat()"><button class="primary" onclick="sendChat()">Send</button></div></div></section>
 <section id="director" class="section"><div class="sectionhead"><h2>Autonomous Director</h2><span class="small">Planning mode</span></div><div class="panel"><h3>Director brief</h3><textarea id="directorBrief" rows="5" placeholder="Paste your documentary idea or script summary..."></textarea><div class="row"><button class="primary" onclick="makePlan()">Generate creative plan</button></div><div id="directorOutput" class="notice">The Director will create a proposed plan here. No changes are made automatically.</div></div></section>
-<section id="story" class="section"><div class="sectionhead"><h2>Documentary Builder</h2><span class="small">Scene organiser</span></div><div class="panel"><h3>Add a scene</h3><div class="field"><label>Voice-over / narration line</label><textarea id="sceneText" rows="3" placeholder="Enter one narration line..."></textarea></div><div class="field"><label>Visual idea / source notes</label><input id="sceneVisual" placeholder="Real photo, archival video, map, graphic..."></div><button class="primary" onclick="addStoryScene()">Add scene</button><div id="sceneList" style="margin-top:16px"></div></div></section>
+<section id="story" class="section"><div class="sectionhead"><h2>Documentary Builder</h2><span class="small">Scene organiser</span></div><div class="panel" style="margin-bottom:14px">
+  <h3>AI SCRIPT-TO-SCENE PLANNER</h3>
+  <p class="small">Paste your complete documentary script.</p>
+  <textarea id="scriptInput" rows="9"
+    placeholder="Paste your complete documentary script here..."></textarea>
+  <div class="row">
+    <button class="primary" onclick="planScriptScenes()">Generate Scenes</button>
+  </div>
+  <div id="scriptSceneOutput"></div>
+</div>
+  <div class="field"><label>Voice-over / narration line</label><textarea id="sceneText" rows="3" placeholder="Enter one narration line..."></textarea></div><div class="field"><label>Visual idea / source notes</label><input id="sceneVisual" placeholder="Real photo, archival video, map, graphic..."></div><button class="primary" onclick="addStoryScene()">Add scene</button><div id="sceneList" style="margin-top:16px"></div></div></section>
 <section id="export" class="section"><div class="sectionhead"><h2>Export & Quality Check</h2></div><div class="panel"><h3>Pre-export checklist</h3><div id="checks"></div><p class="notice" style="margin-top:14px">MP4 rendering, codecs, render queue and export progress are not implemented in this prototype. The Export button is intentionally marked unavailable.</p></div></section>
 </main></div></div>
 <script>
@@ -138,7 +148,122 @@ async function sendChat(){
 
   $("chatlog").scrollTop=$("chatlog").scrollHeight;
 }
-function makePlan(){const t=$("directorBrief").value.trim();$("directorOutput").textContent=t?"PROPOSED PLAN: 1. Establish the central question. 2. Arrange the story in chronological beats. 3. Match each narration beat with a verified visual. 4. Add restrained titles and transitions. 5. Review pacing, factual accuracy and audio. This is a generic starter plan; no source research or edits have been performed.":"Enter a brief first.";}
+
+let plannedScenes = [];
+
+async function planScriptScenes() {
+  const script = $("scriptInput").value.trim();
+  const output = $("scriptSceneOutput");
+
+  if (!script) {
+    output.textContent = "Please paste your documentary script first.";
+    return;
+  }
+
+  if (script.length > 8000) {
+    output.textContent = "Please use a script under 8,000 characters.";
+    return;
+  }
+
+  output.textContent = "CHATMAX is analysing your script...";
+
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: `Act as a professional documentary scene planner.
+Break this script into scenes in the same order.
+Return ONLY a valid JSON array.
+Each object must contain:
+"narration": the original narration sentence,
+"visual": a suitable documentary visual idea,
+"duration_seconds": suggested duration.
+
+SCRIPT:
+${script}`
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "AI request failed");
+    }
+
+    let raw = (data.reply || "").trim();
+    raw = raw.replace(/```json/gi, "").replace(/```/g, "");
+
+    const start = raw.indexOf("[");
+    const end = raw.lastIndexOf("]");
+
+    if (start === -1 || end === -1) {
+      throw new Error("AI did not return valid scene data.");
+    }
+
+    plannedScenes = JSON.parse(raw.slice(start, end + 1));
+
+    output.innerHTML = "";
+
+    plannedScenes.forEach((scene, index) => {
+      const item = document.createElement("div");
+      item.className = "mediaitem";
+      item.textContent =
+        "SCENE " + (index + 1) +
+        " | " + scene.narration +
+        " | VISUAL: " + scene.visual +
+        " | " + scene.duration_seconds + " sec";
+
+      output.appendChild(item);
+    });
+
+    const button = document.createElement("button");
+    button.className = "primary";
+    button.textContent = "Add All Scenes to Timeline";
+    button.onclick = addPlannedScenesToTimeline;
+    output.appendChild(button);
+
+  } catch (error) {
+    output.textContent = "Planner error: " + error.message;
+  }
+}
+
+function addPlannedScenesToTimeline() {
+  if (!plannedScenes.length) return;
+
+  plannedScenes.forEach((scene, index) => {
+    scenes.push({
+      text: scene.narration,
+      visual: scene.visual
+    });
+
+    clips.push({
+      name: "Scene " + (index + 1),
+      type: "video"
+    });
+  });
+
+  renderClips();
+
+  $("sceneList").innerHTML = "";
+
+  scenes.forEach((scene, index) => {
+    const item = document.createElement("div");
+    item.className = "mediaitem";
+    item.textContent =
+      "SCENE " + (index + 1) +
+      " — " + scene.text +
+      " | VISUAL: " + scene.visual;
+
+    $("sceneList").appendChild(item);
+  });
+
+  alert("Scenes added to the timeline!");
+} 
+function makePlan(){
+const t=$("directorBrief").value.trim();
+$("directorOutput").textContent=t?"PROPOSED PLAN: 1. Establish the central question. 2. Arrange the story in chronological beats. 3. Match each narration beat with a verified visual. 4. Add restrained titles and transitions. 5. Review pacing, factual accuracy and audio.":"Enter a brief first.";
+} 
 function addStoryScene(){const t=$("sceneText").value.trim(),v=$("sceneVisual").value.trim();if(!t)return;scenes.push({text:t,visual:v});const d=document.createElement("div");d.className="mediaitem";d.textContent="SCENE "+scenes.length+" — "+t+" | VISUAL: "+(v||"Not specified");$("sceneList").appendChild(d);$("sceneText").value="";$("sceneVisual").value="";}
 function newProject(){clips=[];scenes=[];$("projectName").value="Untitled Documentary";renderClips();$("sceneList").innerHTML="";$("selectedClip").value="None";}
 function saveProject(){const data={name:$("projectName").value,clips,scenes,version:1};const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));a.download="sharmax-project.json";a.click();URL.revokeObjectURL(a.href);}
