@@ -1,6 +1,7 @@
 {
   "type": "module",
   "dependencies": {
-    "@vercel/blob": "latest"
+    "@vercel/blob": "latest",
+    "@google/genai": "latest"
   }
 }
