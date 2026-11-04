@@ -213,52 +213,36 @@ async function analyseReferenceVideo() {
     return;
   }
 
-  status.textContent = "Creating secure upload session...";
+  if (file.size > 4 * 1024 * 1024) {
+    status.textContent = "Video must be smaller than 4 MB.";
+    return;
+  }
+
+  status.textContent = "Uploading video securely to Gemini...";
 
   try {
-    const sessionResponse = await fetch("/api/start-reference-upload", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fileName: file.name,
-        mimeType: file.type,
-        size: file.size
-      })
-    });
-
-    const sessionData = await sessionResponse.json();
-
-    if (!sessionResponse.ok) {
-      throw new Error(sessionData.error || "Upload session failed.");
-    }
-
-    status.textContent = "Uploading reference video...";
-
-    const uploadResponse = await fetch(sessionData.uploadUrl, {
+    const response = await fetch("/api/upload-reference-video", {
       method: "POST",
       headers: {
-        "X-Goog-Upload-Offset": "0",
-        "X-Goog-Upload-Command": "upload, finalize",
         "Content-Type": file.type
       },
       body: file
     });
 
-    const uploadData = await uploadResponse.json();
+    const result = await response.json();
 
-    if (!uploadResponse.ok) {
-      throw new Error("Video upload failed.");
+    if (!response.ok) {
+      throw new Error(result.error || "Video upload failed.");
     }
 
     status.textContent =
-      "Video uploaded successfully. File: " +
-      (uploadData.file?.name || "Uploaded");
+      "Video uploaded successfully! File: " +
+      (result.file?.name || "Uploaded");
 
   } catch (error) {
     status.textContent = "Upload error: " + error.message;
   }
 }
-
 function setupPassword(){const p=prompt("Create a password for this device (minimum 8 characters):");if(!p)return;if(p.length<8){$("loginError").textContent="Use at least 8 characters.";return;}localStorage.setItem("sharmax_local_pass",p);$("loginError").textContent="Password saved on this device. Sign in now."; }
 function login(){const u=$("username").value.trim().toLowerCase(),p=$("password").value;if(u!=="sharandeep singh"){ $("loginError").textContent="Username does not match.";return;}const saved=localStorage.getItem("sharmax_local_pass");if(!saved){$("loginError").textContent="First set a password on this device.";return;}if(p!==saved){$("loginError").textContent="Incorrect password.";return;} $("login").style.display="none";$("app").style.display="block";}
 document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
