@@ -52,7 +52,7 @@ main{padding:24px;min-width:0}.hero{border:1px solid #39322d;border-radius:16px;
 <div id="app">
 <header class="top"><div class="brand">SHARMAX <span>UNIVERSE</span></div><div class="actions"><button onclick="newProject()">New project</button><button onclick="saveProject()">Save</button><button onclick="document.getElementById('projectOpen').click()">Open</button><button class="primary" onclick="alert('Export engine is not connected in this prototype yet.')">Export</button><input id="projectOpen" type="file" accept=".json" hidden onchange="openProject(event)"></div></header>
 <div class="layout"><aside class="side"><small>WORKSPACE</small>
-<button class="nav active" data-tab="home">◈ Overview</button><button class="nav" data-tab="editor">▣ Editor</button><button class="nav" data-tab="chat">✳ CHATMAX AI</button><button class="nav" data-tab="director">◉ Autonomous Director</button><button class="nav" data-tab="story">▤ Documentary Builder</button><button class="nav" data-tab="export">⇧ Export & QA</button>
+<button class="nav active" data-tab="home">◈ Overview</button><button class="nav" data-tab="editor">▣ Editor</button><button class="nav" data-tab="reference">✦ Reference Studio</button><button class="nav" data-tab="chat">✳ CHATMAX AI</button><button class="nav" data-tab="director">◉ Autonomous Director</button><button class="nav" data-tab="story">▤ Documentary Builder</button><button class="nav" data-tab="export">⇧ Export & QA</button>
 </aside><main>
 <section id="home" class="section active"><div class="hero"><div class="eyebrow">YOUR CREATIVE CONTROL ROOM</div><h2>Make every frame<br>mean something.</h2><p>A cinematic workspace for documentary editing, visual storytelling and ambitious ideas. Built as a lightweight browser prototype.</p><button class="primary" onclick="showTab('editor')">Open Editor ↗</button></div>
 <div class="grid"><div class="tile"><div class="symbol">▣</div><h3>Multi-track Editor</h3><p>Media import, preview area and starter video/audio/text timeline.</p></div><div class="tile"><div class="symbol">✳</div><h3>CHATMAX AI</h3><p>Command interface prototype for supported demo actions.</p></div><div class="tile"><div class="symbol">◉</div><h3>Autonomous Director</h3><p>Plan scenes and creative decisions before applying edits.</p></div></div>
@@ -64,7 +64,91 @@ main{padding:24px;min-width:0}.hero{border:1px solid #39322d;border-radius:16px;
   <button onclick="document.getElementById('preview').classList.remove('cinematic')">↩ Reset Look</button>
 </div>><button onclick="addClip('Video scene')">＋ Add clip</button><button onclick="addClip('Title card')">＋ Add title</button></div><div class="timeline"><h3>Timeline</h3><div class="track"><b>VIDEO 1</b><div class="lane" id="videoLane"></div></div><div class="track"><b>AUDIO 1</b><div class="lane" id="audioLane"></div></div><div class="track"><b>TEXT 1</b><div class="lane" id="textLane"></div></div></div></div>
 <div class="panel"><h3>Inspector</h3><div class="field"><label>Project name</label><input id="projectName" value="Untitled Documentary"></div><div class="field"><label>Selected clip</label><input id="selectedClip" value="None" readonly></div><div class="field"><label>Scale</label><input type="range" min="10" max="200" value="100"></div><div class="field"><label>Opacity</label><input type="range" min="0" max="100" value="100"></div><p class="small">Inspector controls are visual placeholders until the editing engine is added.</p></div></div></section>
-<section id="chat" class="section"><div class="sectionhead"><h2>CHATMAX AI</h2><span class="small">Gemini AI Connected</span></div><div class="notice">CHATMAX AI is connected to the Gemini API. Describe your editing task below.</div><div class="panel" style="margin-top:14px"><div id="chatlog" class="chatlog"><div class="msg">CHATMAX: Hello! Describe the editing task you want help with.</div></div><div class="row"><input id="chatInput" placeholder="Describe an edit..." onkeydown="if(event.key==='Enter')sendChat()"><button class="primary" onclick="sendChat()">Send</button></div></div></section>
+<section id="reference" class="section">
+
+<div class="sectionhead">
+<h2>AI Reference Editing Studio</h2>
+<span class="small">Stage 1 · Reference Upload</span>
+</div>
+
+<div class="panel">
+<h3>1. Upload Reference Video</h3>
+
+<p class="small">
+Upload your Pinterest editing reference video.
+</p>
+
+<input
+id="referenceVideoInput"
+type="file"
+accept="video/*"
+onchange="loadReferenceVideo(event)"
+>
+
+<div id="referenceVideoStatus" class="notice" style="margin-top:12px">
+No reference video selected.
+</div>
+
+<div
+id="referenceVideoPreview"
+class="preview"
+style="margin-top:12px"
+>
+<div>REFERENCE VIDEO PREVIEW</div>
+</div>
+</div>
+
+<div class="panel" style="margin-top:14px">
+
+<h3>2. Animation Duration</h3>
+
+<div class="row">
+
+<button onclick="selectAnimationDuration(5)">
+5 Seconds
+</button>
+
+<button onclick="selectAnimationDuration(10)">
+10 Seconds
+</button>
+
+<button onclick="selectAnimationDuration(15)">
+15 Seconds
+</button>
+
+</div>
+
+<div id="animationDurationStatus" class="notice">
+Selected duration: 5 seconds
+</div>
+
+</div>
+<div id="animationDurationStatus" class="notice">
+Selected duration: 5 seconds
+</div>
+
+</div>
+
+<div class="panel" style="margin-top:14px">
+<h3>3. AI Reference Analysis</h3>
+
+<p class="small">
+AI will study camera movement, zoom, transitions,
+parallax and visual effects from your reference video.
+</p>
+
+<button class="primary" onclick="analyseReferenceVideo()">
+✦ Analyse Reference Video
+</button>
+
+<div id="referenceAnalysisStatus" class="notice" style="margin-top:12px">
+Waiting for reference video.
+</div>
+</div>
+
+</section>
+</section>
+  <section id="chat" class="section"><div class="sectionhead"><h2>CHATMAX AI</h2><span class="small">Gemini AI Connected</span></div><div class="notice">CHATMAX AI is connected to the Gemini API. Describe your editing task below.</div><div class="panel" style="margin-top:14px"><div id="chatlog" class="chatlog"><div class="msg">CHATMAX: Hello! Describe the editing task you want help with.</div></div><div class="row"><input id="chatInput" placeholder="Describe an edit..." onkeydown="if(event.key==='Enter')sendChat()"><button class="primary" onclick="sendChat()">Send</button></div></div></section>
 <section id="director" class="section"><div class="sectionhead"><h2>Autonomous Director</h2><span class="small">Planning mode</span></div><div class="panel"><h3>Director brief</h3><textarea id="directorBrief" rows="5" placeholder="Paste your documentary idea or script summary..."></textarea><div class="row"><button class="primary" onclick="makePlan()">Generate creative plan</button></div><div id="directorOutput" class="notice">The Director will create a proposed plan here. No changes are made automatically.</div></div></section>
 <section id="story" class="section"><div class="sectionhead"><h2>Documentary Builder</h2><span class="small">Scene organiser</span></div><div class="panel" style="margin-bottom:14px">
   <h3>AI SCRIPT-TO-SCENE PLANNER</h3>
@@ -81,6 +165,59 @@ main{padding:24px;min-width:0}.hero{border:1px solid #39322d;border-radius:16px;
 </main></div></div>
 <script>
 const $=id=>document.getElementById(id);let clips=[],media=[],scenes=[];
+  let referenceVideoUrl = null;
+let selectedAnimationDuration = 5;
+
+function loadReferenceVideo(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith("video/")) {
+    $("referenceVideoStatus").textContent = "Please select a video file.";
+    event.target.value = "";
+    return;
+  }
+
+  if (referenceVideoUrl) {
+    URL.revokeObjectURL(referenceVideoUrl);
+  }
+
+  referenceVideoUrl = URL.createObjectURL(file);
+
+  const preview = $("referenceVideoPreview");
+  preview.innerHTML = "";
+
+  const video = document.createElement("video");
+  video.src = referenceVideoUrl;
+  video.controls = true;
+  video.preload = "metadata";
+  video.style.width = "100%";
+
+  preview.appendChild(video);
+
+  $("referenceVideoStatus").textContent =
+    "Reference video loaded: " + file.name;
+}
+function selectAnimationDuration(seconds) {
+  selectedAnimationDuration = seconds;
+
+  $("animationDurationStatus").textContent =
+    "Selected duration: " + seconds + " seconds";
+}
+
+async function analyseReferenceVideo() {
+  const file = $("referenceVideoInput").files[0];
+
+  if (!file) {
+    $("referenceAnalysisStatus").textContent =
+      "Please upload a reference video first.";
+    return;
+  }
+
+  $("referenceAnalysisStatus").textContent =
+    "Reference video ready. AI analysis engine is not connected yet.";
+}
+
 function setupPassword(){const p=prompt("Create a password for this device (minimum 8 characters):");if(!p)return;if(p.length<8){$("loginError").textContent="Use at least 8 characters.";return;}localStorage.setItem("sharmax_local_pass",p);$("loginError").textContent="Password saved on this device. Sign in now."; }
 function login(){const u=$("username").value.trim().toLowerCase(),p=$("password").value;if(u!=="sharandeep singh"){ $("loginError").textContent="Username does not match.";return;}const saved=localStorage.getItem("sharmax_local_pass");if(!saved){$("loginError").textContent="First set a password on this device.";return;}if(p!==saved){$("loginError").textContent="Incorrect password.";return;} $("login").style.display="none";$("app").style.display="block";}
 document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
