@@ -205,16 +205,44 @@ ${script}`
 
     output.innerHTML = "";
 
+       // Remove duplicate narration
+    const seenScenes = new Set();
+
+    plannedScenes = plannedScenes.filter(scene => {
+      const key = (scene.narration || "").trim().toLowerCase();
+
+      if (!key || seenScenes.has(key)) return false;
+
+      seenScenes.add(key);
+      return true;
+    });
+
+    output.innerHTML = "";
+
     plannedScenes.forEach((scene, index) => {
       const item = document.createElement("div");
       item.className = "mediaitem";
-      item.textContent =
-        "SCENE " + (index + 1) +
-        " | " + scene.narration +
-        " | VISUAL: " + scene.visual +
-        " | " + scene.duration_seconds + " sec";
 
+      const heading = document.createElement("h3");
+      heading.textContent = "SCENE " + (index + 1);
+
+      const narration = document.createElement("p");
+      narration.textContent = scene.narration;
+
+      const visual = document.createElement("p");
+      visual.textContent = "VISUAL: " + scene.visual;
+
+      const duration = document.createElement("p");
+      duration.textContent = scene.duration_seconds + " sec";
+
+      const photoArea = document.createElement("div");
+      photoArea.id = "photoResults" + index;
+      photoArea.textContent = "Searching real photos...";
+
+      item.append(heading, narration, visual, duration, photoArea);
       output.appendChild(item);
+
+      searchCommonsPhotos(scene, index);
     });
 
     const button = document.createElement("button");
@@ -227,7 +255,63 @@ ${script}`
     output.textContent = "Planner error: " + error.message;
   }
 }
+async function searchCommonsPhotos(scene, index) {
+  const area = document.getElementById("photoResults" + index);
+  if (!area) return;
 
+  const query = encodeURIComponent(scene.visual || scene.narration);
+
+  try {
+    const url =
+      "https://commons.wikimedia.org/w/api.php?action=query" +
+      "&generator=search&gsrsearch=" + query +
+      "&gsrnamespace=6&gsrlimit=4" +
+      "&prop=imageinfo&iiprop=url|extmetadata" +
+      "&iiurlwidth=400&format=json&origin=*";
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    area.innerHTML = "";
+
+    const pages = Object.values(data.query?.pages || {});
+
+    if (!pages.length) {
+      area.textContent = "No photos found. Try another visual description.";
+      return;
+    }
+
+    pages.forEach(page => {
+      const info = page.imageinfo?.[0];
+      if (!info) return;
+
+      const card = document.createElement("div");
+      card.className = "mediaitem";
+
+      const img = document.createElement("img");
+      img.src = info.thumburl || info.url;
+      img.alt = page.title;
+      img.style.width = "180px";
+      img.style.maxHeight = "130px";
+      img.style.objectFit = "contain";
+
+      const title = document.createElement("p");
+      title.textContent = page.title.replace("File:", "");
+
+      const source = document.createElement("a");
+      source.href = info.descriptionurl;
+      source.textContent = "View original source";
+      source.target = "_blank";
+      source.rel = "noopener";
+
+      card.append(img, title, source);
+      area.appendChild(card);
+    });
+
+  } catch (error) {
+    area.textContent = "Photo search failed: " + error.message;
+  }
+}
 function addPlannedScenesToTimeline() {
   if (!plannedScenes.length) return;
 
