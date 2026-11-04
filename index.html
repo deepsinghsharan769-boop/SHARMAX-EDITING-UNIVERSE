@@ -247,12 +247,30 @@ async function analyseReferenceVideo() {
       multipart: true
     });
 
+    status.textContent = "Checking uploaded video...";
+
+    const response = await fetch("/api/analyse-reference-video", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        pathname: blob.pathname
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Video check failed.");
+    }
+
     status.textContent =
-      "Reference video uploaded successfully! File: " + blob.pathname;
+      "Video uploaded and verified successfully! Ready for AI analysis.";
 
   } catch (error) {
-    console.error("Reference upload error:", error);
-    status.textContent = "Upload error: " + error.message;
+    console.error("Reference analysis error:", error);
+    status.textContent = "Error: " + error.message;
   }
 }
 function setupPassword(){const p=prompt("Create a password for this device (minimum 8 characters):");if(!p)return;if(p.length<8){$("loginError").textContent="Use at least 8 characters.";return;}localStorage.setItem("sharmax_local_pass",p);$("loginError").textContent="Password saved on this device. Sign in now."; }
