@@ -1,62 +1,46 @@
+import { GoogleGenAI } from "@google/genai";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({
+      error: "Method not allowed"
+    });
   }
 
   try {
-    const { fileName, mimeType, size } = req.body || {};
+    const { message } = req.body || {};
+
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({
+        error: "Please enter a valid message."
+      });
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      return res.status(500).json({ error: "Gemini API key missing" });
-    }
-
-    if (
-      !fileName ||
-      !mimeType ||
-      !mimeType.startsWith("video/") ||
-      !Number.isFinite(size) ||
-      size <= 0
-    ) {
-      return res.status(400).json({ error: "Invalid video details" });
-    }
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "X-Goog-Upload-Protocol": "resumable",
-          "X-Goog-Upload-Command": "start",
-          "X-Goog-Upload-Header-Content-Length": String(size),
-          "X-Goog-Upload-Header-Content-Type": mimeType,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          file: { display_name: fileName }
-        })
-      }
-    );
-
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: "Could not start video upload"
-      });
-    }
-
-    const uploadUrl = response.headers.get("x-goog-upload-url");
-
-    if (!uploadUrl) {
       return res.status(500).json({
-        error: "Upload session URL not received"
+        error: "Gemini API key is missing."
       });
     }
 
-    return res.status(200).json({ uploadUrl });
+    const ai = new GoogleGenAI({ apiKey });
+
+    const result = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: message
+    });
+
+    return res.status(200).json({
+      success: true,
+      reply: result.text || "No response received from Gemini."
+    });
 
   } catch (error) {
-    return res.status(500).json({
-      error: "Upload setup failed"
+    console.error("CHATMAX error:", error);
+
+    return res.status(error.status || 500).json({
+      error: error.message || "CHATMAX request failed."
     });
   }
 }
