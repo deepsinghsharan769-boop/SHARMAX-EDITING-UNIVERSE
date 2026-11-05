@@ -97,10 +97,14 @@ export default async function handler(req, res) {
 
     if (fileStatus.state !== "ACTIVE") {
       throw new Error("Video processing is taking too long.");
-    }
+    ```js
+let result;
+let lastError;
 
-    const result = await ai.models.generateContent({
-     model: "gemini-3.8-flash",
+for (let attempt = 1; attempt <= 3; attempt++) {
+  try {
+    result = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
       contents: [
         {
           fileData: {
@@ -112,8 +116,7 @@ export default async function handler(req, res) {
           text: `
 Analyse this reference video for SHARMAX.
 
-Identify its editing style, including:
-
+Identify:
 1. Camera movements
 2. Zoom in and zoom out
 3. Pan and tilt
@@ -145,11 +148,29 @@ Do not suggest copying its entire content.
       ]
     });
 
-    return res.status(200).json({
-      success: true,
-      message: "Gemini AI analysis completed!",
-      analysis: result.text
-    });
+    break;
+
+  } catch (error) {
+    lastError = error;
+
+    if (
+      attempt === 3 ||
+      ![429, 500, 502, 503, 504].includes(
+        Number(error.status || error.code)
+      )
+    ) {
+      throw error;
+    }
+
+    await new Promise(resolve =>
+      setTimeout(resolve, attempt * 5000)
+    );
+  }
+}
+
+if (!result) {
+  throw lastError || new Error("Gemini analysis failed.");
+}
 
   } catch (error) {
     console.error("Gemini analysis error:", error);
