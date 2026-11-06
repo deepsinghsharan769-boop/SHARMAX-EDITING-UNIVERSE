@@ -270,18 +270,22 @@ async function analyseReferenceVideo() {
       );
     }
 
-    if (!response.ok) {
-      throw new Error(result.error || "Video check failed.");
-    }
-
-    status.textContent =
-      "Video uploaded and verified successfully! Ready for AI analysis.";
-
-  } catch (error) {
-    console.error("Reference analysis error:", error);
-    status.textContent = "Error: " + error.message;
-  }
+ if (!response.ok) {
+  throw new Error(data.error || "AI request failed");
 }
+
+pending.textContent = "CHATMAX: " + data.reply;
+
+} catch (error) {
+  pending.textContent = "CHATMAX ERROR: " + error.message;
+}
+
+$("chatlog").scrollTop = $("chatlog").scrollHeight;
+}
+
+let plannedScenes = [];
+
+async function planScriptScenes() {
 function setupPassword(){const p=prompt("Create a password for this device (minimum 8 characters):");if(!p)return;if(p.length<8){$("loginError").textContent="Use at least 8 characters.";return;}localStorage.setItem("sharmax_local_pass",p);$("loginError").textContent="Password saved on this device. Sign in now."; }
 function login(){const u=$("username").value.trim().toLowerCase(),p=$("password").value;if(u!=="sharandeep singh"){ $("loginError").textContent="Username does not match.";return;}const saved=localStorage.getItem("sharmax_local_pass");if(!saved){$("loginError").textContent="First set a password on this device.";return;}if(p!==saved){$("loginError").textContent="Incorrect password.";return;} $("login").style.display="none";$("app").style.display="block";}
 document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
