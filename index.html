@@ -330,17 +330,18 @@ async function sendChat(){
       body:JSON.stringify({message:q})
     });
 
-    const data=await response.json();
-    if(!response.ok)throw new Error(data.error||"AI request failed");
+const responseText = await response.text();
+let data;
 
-    pending.textContent="CHATMAX: "+data.reply;
-  }catch(error){
-    pending.textContent="CHATMAX ERROR: "+error.message;
-  }
-
-  $("chatlog").scrollTop=$("chatlog").scrollHeight;
+try {
+  data = JSON.parse(responseText);
+} catch {
+  throw new Error(`Server returned invalid response (${response.status}).`);
 }
 
+if (!response.ok) {
+  throw new Error(data.error || "AI request failed");
+}
 let plannedScenes = [];
 
 async function planScriptScenes() {
