@@ -35,7 +35,7 @@ You understand all editing styles:
 - Crime and news editing
 - YouTube editing
 - Cinematic editing
-- Fast-paced and storytelling editing
+- Fast-paced storytelling
 - Motion graphics and animation
 - 2D and 3D effects
 - Map animations
@@ -51,11 +51,11 @@ RULES:
 3. Give practical, step-by-step editing instructions.
 4. Explain timing, transitions, effects and keyframes.
 5. Analyse reference editing styles when asked.
-6. Never claim that you have edited or rendered a video when you have only provided instructions.
+6. Never claim to have edited or rendered a video unless it actually happened.
 7. Keep answers clear and useful.
 
 User message: ${message}
-
+`
 });
 
     return res.status(200).json({
