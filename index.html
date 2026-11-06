@@ -213,6 +213,48 @@ async function analyseReferenceVideo() {
     return;
   }
 
+  try {
+    status.textContent = "Uploading reference video...";
+
+    const { upload } = await import(
+      "https://esm.sh/@vercel/blob@2.4.0/client"
+    );
+
+    const blob = await upload(file.name, file, {
+      access: "private",
+      handleUploadUrl: "/api/reference-video-upload",
+      multipart: true
+    });
+
+    status.textContent = "Analysing video with AI...";
+
+    const response = await fetch("/api/analyse-reference-video", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pathname: blob.pathname })
+    });
+
+    const responseText = await response.text();
+    let result;
+
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      throw new Error("Server returned an invalid response.");
+    }
+
+    if (!response.ok) {
+      throw new Error(result.error || "Analysis failed.");
+    }
+
+    status.textContent =
+      result.analysis || result.message || "Analysis completed!";
+
+  } catch (error) {
+    status.textContent = "Error: " + error.message;
+  }
+}
+
   const maxSize = 150 * 1024 * 1024;
 
   if (file.size > maxSize) {
@@ -293,69 +335,77 @@ function showTab(id){document.querySelectorAll(".section").forEach(s=>s.classLis
 function addMedia(e){for(const f of e.target.files){const url=URL.createObjectURL(f);media.push({name:f.name,type:f.type,url});const d=document.createElement("div");d.className="mediaitem";d.textContent=f.name+" · "+(f.type.split("/")[0]||"file");$("mediaList").className="";$("mediaList").appendChild(d);if(f.type.startsWith("video/")){$("preview").innerHTML="";const v=document.createElement("video");v.src=url;v.controls=true;$("preview").appendChild(v);}}}
 function addClip(name){const type=name.toLowerCase().includes("audio")?"audio":name.toLowerCase().includes("title")?"text":"video";clips.push({name,type});renderClips();}
 function renderClips(){["video","audio","text"].forEach(t=>{$(t+"Lane").innerHTML="";clips.filter(c=>c.type===t).forEach((c,i)=>{const d=document.createElement("div");d.className="clip";d.style.left=(8+i*34)+"px";d.textContent=c.name;d.onclick=()=>{$("selectedClip").value=c.name;};$(t+"Lane").appendChild(d);});});}
-async function sendChat(){
-  const q=$("chatInput").value.trim();
-  if(!q)return;
+async function sendChat() {
+  const q = $("chatInput").value.trim();
+  if (!q) return;
 
-  const add=(who,t,cls="")=>{
-    const d=document.createElement("div");
-    d.className="msg "+cls;
-    d.textContent=who+": "+t;
+  const add = (who, t, cls = "") => {
+    const d = document.createElement("div");
+    d.className = "msg " + cls;
+    d.textContent = who + ": " + t;
     $("chatlog").appendChild(d);
   };
 
-  add("YOU",q,"user");
-  $("chatInput").value="";
+  add("YOU", q, "user");
+  $("chatInput").value = "";
 
-  const command=q.toLowerCase();
+  const command = q.toLowerCase();
 
-  if(
+  if (
     command.includes("cinematic") ||
     command.includes("netflix") ||
     command.includes("premium documentary") ||
     command.includes("documentary look")
-  ){
-    const video=$("preview").querySelector("video");
+  ) {
+    const video = $("preview").querySelector("video");
 
-    if(!video){
-      add("CHATMAX","Please upload a video in the Composition Monitor first.");
-    }else{
+    if (!video) {
+      add("CHATMAX", "Please upload a video first.");
+    } else {
       $("preview").classList.add("cinematic");
-      add("CHATMAX","Cinematic documentary look applied to your preview!");
+      add("CHATMAX", "Cinematic look applied to preview.");
     }
-
     return;
   }
 
-  if(command.includes("reset look") || command.includes("remove cinematic")){
+  if (command.includes("reset look") || command.includes("remove cinematic")) {
     $("preview").classList.remove("cinematic");
-    add("CHATMAX","Cinematic look reset.");
+    add("CHATMAX", "Cinematic look reset.");
     return;
   }
 
-  add("CHATMAX","Thinking…");
-  const pending=$("chatlog").lastElementChild;
+  add("CHATMAX", "Thinking…");
+  const pending = $("chatlog").lastElementChild;
 
-  try{
-    const response=await fetch("/api/chat",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({message:q})
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: q })
     });
 
-const responseText = await response.text();
-let data;
+    const responseText = await response.text();
+    let data;
 
-try {
-  data = JSON.parse(responseText);
-} catch {
-  throw new Error(`Server returned invalid response (${response.status}).`);
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      throw new Error("Server returned invalid response.");
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || "AI request failed");
+    }
+
+    pending.textContent = "CHATMAX: " + data.reply;
+
+  } catch (error) {
+    pending.textContent = "CHATMAX ERROR: " + error.message;
+  }
+
+  $("chatlog").scrollTop = $("chatlog").scrollHeight;
 }
 
-if (!response.ok) {
-  throw new Error(data.error || "AI request failed");
-}
-let plannedScenes = [];
 
 async function planScriptScenes() {
   const script = $("scriptInput").value.trim();
