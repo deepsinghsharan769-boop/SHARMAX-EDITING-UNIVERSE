@@ -255,76 +255,7 @@ async function analyseReferenceVideo() {
   }
 }
 
-  const maxSize = 150 * 1024 * 1024;
-
-  if (file.size > maxSize) {
-    status.textContent = "Video must be 150 MB or smaller.";
-    return;
-  }
-
-  const allowedTypes = [
-    "video/mp4",
-    "video/webm",
-    "video/quicktime",
-    "video/x-matroska"
-  ];
-
-  if (!allowedTypes.includes(file.type)) {
-    status.textContent = "Please select MP4, WebM, MOV or MKV video.";
-    return;
-  }
-
-  try {
-    status.textContent = "Connecting to secure video upload...";
-
-    const { upload } = await import(
-      "https://esm.sh/@vercel/blob@2.4.0/client"
-    );
-
-    status.textContent = "Uploading reference video...";
-
-    const blob = await upload(file.name, file, {
-      access: "private",
-      handleUploadUrl: "/api/reference-video-upload",
-      multipart: true
-    });
-
-    status.textContent = "Checking uploaded video...";
-
-    const response = await fetch("/api/analyse-reference-video", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        pathname: blob.pathname
-      })
-    });
-
-    const responseText = await response.text();
-    let result;
-
-    try {
-      result = JSON.parse(responseText);
-    } catch {
-      throw new Error(
-        `Server returned invalid response (${response.status}).`
-      );
-    }
-
-if (!response.ok) {
-  throw new Error(data.error || "AI request failed");
-}
-
-pending.textContent = "CHATMAX: " + data.reply;
-
-} catch (error) {
-  pending.textContent = "CHATMAX ERROR: " + error.message;
-}
-
-$("chatlog").scrollTop = $("chatlog").scrollHeight;
-}
-
+ 
 let plannedScenes = [];
 
 async function planScriptScenes() {
